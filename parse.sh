@@ -2,32 +2,36 @@
 # 2015 Alexander Couzens <lynxis@fe80.eu>
 # under MIT license
 
+# ideally, we'd like to use the following line:
+#   set -eu
+# however, jshn.sh does not initialize all variables
+
 . /usr/share/libubox/jshn.sh
 
-_log() {
+log() {
 	local level=$1
 	shift
 	logger -s -t freifunk.config -p daemon.$level $@
 }
 
 check_json_contains() {
-        local look_for="$1"
-        local type
-        json_get_type type $look_for
-        case "$type" in
-                object|array|string|int)
-                        return 0;
-                        ;;
-                *)
-                        return 1;
-                        ;;
-        esac
+  local look_for="$1"
+  local type
+  json_get_type type $look_for
+  case "$type" in
+    object|array|string|int)
+      return 0;
+      ;;
+    *)
+      return 1;
+      ;;
+  esac
 }
 
 router_handler() {
 	local key
 	local val
-        local known_keys="router password"
+  local known_keys="name passwordHash"
 
 	json_get_keys keys router
 	json_select router
@@ -36,8 +40,8 @@ router_handler() {
 		json_get_var val "$key"
 
 		case "$key" in
-			password)
-				echo -n "$key\n$key\n" | passwd
+			passwordHash)
+			  sed -i -e "s/^root:[^:]*:/root:$val:/" /etc/shadow
 				;;
 			name)
 				uci set "system.@system[0].hostname=$val"
@@ -51,7 +55,7 @@ router_handler() {
 contact_handler() {
 	local key
 	local val
-        local known_keys="name email"
+  local known_keys="name email"
 
 	json_get_keys keys contact
 	json_select contact
@@ -61,7 +65,7 @@ contact_handler() {
 
 		case "$key" in
 			*)
-				log "Dont know to do with contact.$key"
+				log info "Dont know to do with contact.$key"
 				;;
 		esac
 	done
@@ -72,7 +76,7 @@ contact_handler() {
 location_handler() {
 	local key
 	local val
-        local known_keys="lat lng street postalCode city"
+  local known_keys="lat lng street postalCode city"
 
 	json_get_keys keys location
 	json_select location
@@ -82,7 +86,7 @@ location_handler() {
 
 		case "$key" in
 			*)
-				log "Dont know to do with location.$key"
+				log info "Dont know to do with location.$key"
 				;;
 		esac
 	done
@@ -93,7 +97,7 @@ location_handler() {
 internet_handler() {
 	local key
 	local val
-        local known_keys="share vpn"
+  local known_keys="share vpn"
 
 	json_get_keys keys internet
 	json_select internet
@@ -103,7 +107,7 @@ internet_handler() {
 
 		case "$key" in
 			*)
-				log "Dont know to do with internet.$key"
+				log info "Dont know to do with internet.$key"
 				;;
 		esac
 	done
@@ -114,7 +118,7 @@ internet_handler() {
 ip_handler() {
 	local key
 	local val
-        local known_keys="v6Prefix v4MeshIps distribute v4DhcpPrefix"
+  local known_keys="v6Prefix v4MeshIps distribute v4DhcpPrefix"
 	json_get_keys keys ip
 	json_select ip
 
@@ -123,7 +127,7 @@ ip_handler() {
 
 		case "$key" in
 			*)
-				log "Dont know to do with ip.$key"
+				log info "Dont know to do with ip.$key"
 				;;
 		esac
 	done
@@ -134,7 +138,7 @@ ip_handler() {
 wifi_handler() {
 	local key
 	local val
-        local known_keys="channel ap mesh"
+  local known_keys="channel ap mesh"
 	json_get_keys keys wifi
 	json_select wifi
 
@@ -143,7 +147,7 @@ wifi_handler() {
 
 		case "$key" in
 			*)
-				log "Dont know to do with wifi.$key"
+				log info "Dont know to do with wifi.$key"
 				;;
 		esac
 	done
@@ -152,16 +156,17 @@ wifi_handler() {
 }
 
 parser() {
-	local config=$(cat example.js)
+	local config=$(cat $1)
 
-	json init
+	json_init
 	json_load "$config"
 
-	check_json_contains "route" && route_handler
-	check_json_contains "contact" && contact_handler
-	check_json_contains "location" && location_handler
-	check_json_contains "internet" && internet_handler
-	check_json_contains "ip" && ip_handler
-	check_json_contains "wifi" && wifi_handler
-
+	check_json_contains "router" && router_handler
+	#check_json_contains "contact" && contact_handler
+	#check_json_contains "location" && location_handler
+	#check_json_contains "internet" && internet_handler
+	#check_json_contains "ip" && ip_handler
+	#check_json_contains "wifi" && wifi_handler
 }
+
+parser "$1"
