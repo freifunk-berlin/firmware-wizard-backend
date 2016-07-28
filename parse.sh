@@ -33,7 +33,6 @@ router_handler() {
 	local val
   local known_keys="name passwordHash"
 
-	json_get_keys keys router
 	json_select router
 
 	for key in $known_keys ; do
@@ -49,6 +48,8 @@ router_handler() {
 		esac
 	done
 
+	uci commit system
+
 	json_select ..
 }
 
@@ -57,18 +58,25 @@ contact_handler() {
 	local val
   local known_keys="name email"
 
-	json_get_keys keys contact
 	json_select contact
+
+	touch /etc/config/freifunk
+	uci set freifunk.contact=public
 
 	for key in $known_keys ; do
 		json_get_var val "$key"
 
 		case "$key" in
+			name|email)
+				uci set "freifunk.contact.$key=$val"
+				;;
 			*)
 				log info "Dont know to do with contact.$key"
 				;;
 		esac
 	done
+
+	uci commit freifunk
 
 	json_select ..
 }
@@ -76,20 +84,16 @@ contact_handler() {
 location_handler() {
 	local key
 	local val
-  local known_keys="lat lng street postalCode city"
 
-	json_get_keys keys location
 	json_select location
 
-	for key in $known_keys ; do
-		json_get_var val "$key"
+	json_get_vars lat lon street postalCode city
 
-		case "$key" in
-			*)
-				log info "Dont know to do with location.$key"
-				;;
-		esac
-	done
+	uci set "system.@system[0].latitude=$lat"
+	uci set "system.@system[0].longitude=$lon"
+	uci set "system.@system[0].latlon=$lat $lon"
+	uci set "system.@system[0].location=$street, $postalCode, $city"
+	uci commit system
 
 	json_select ..
 }
@@ -162,8 +166,8 @@ parser() {
 	json_load "$config"
 
 	check_json_contains "router" && router_handler
-	#check_json_contains "contact" && contact_handler
-	#check_json_contains "location" && location_handler
+	check_json_contains "contact" && contact_handler
+	check_json_contains "location" && location_handler
 	#check_json_contains "internet" && internet_handler
 	#check_json_contains "ip" && ip_handler
 	#check_json_contains "wifi" && wifi_handler
