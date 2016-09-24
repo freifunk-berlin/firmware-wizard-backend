@@ -1,4 +1,4 @@
-{
+{ "config": {
   "router": {
     "passwordHash": "$1$InRJgW3u$AUzNCKbr1YhUf6yNfjoyE.",
     "name": "wurstrouter"
@@ -52,4 +52,5 @@
     "radio1": {
     }
   }
+}
 }
