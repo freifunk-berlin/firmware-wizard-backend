@@ -8,8 +8,8 @@
     "email": "doener@pumpe.net"
   },
   "location": {
-    "lat": 52.538525899999996,
-    "lng": 13.3853186,
+    "lat": "52.538525899999996",
+    "lng": "13.3853186",
     "street": "Feldstraße 10",
     "postalCode": "13355",
     "city": "Berlin"
